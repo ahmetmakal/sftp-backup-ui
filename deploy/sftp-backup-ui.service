@@ -1,0 +1,18 @@
+[Unit]
+Description=SFTP Backup Kullanici Yonetim UI
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/sftp-backup-ui
+EnvironmentFile=/etc/sftp-backup-ui/env
+ExecStart=/opt/sftp-backup-ui/bin/sftp-backup-ui
+Restart=on-failure
+RestartSec=5
+# Bu servis useradd/xfs_quota/sshd reload gibi root yetkisi gerektiren
+# komutlar calistirir, bu yuzden root olarak calisir. Erisim kontrolu
+# uygulama icindeki basic-auth (ADMIN_USER/ADMIN_PASSWORD) ile saglanir.
+User=root
+
+[Install]
+WantedBy=multi-user.target

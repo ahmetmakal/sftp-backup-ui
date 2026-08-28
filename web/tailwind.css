@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@source "../templates/**/*.html";
+
+/* Manual dark mode: toggled via a `dark` class on <html>, set from
+   localStorage or system preference by the boot script in each template. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Fira Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Design system: "Dark tech + status green" (ui-ux-pro-max recommendation
+   for a dense ops/admin dashboard). Semantic tokens swap between light and
+   dark via the .dark class, so most components need only one set of
+   `bg-[var(--card)]`-style utility classes instead of a light/dark pair. */
+:root {
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --card: #ffffff;
+  --card-fg: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --accent: #16a34a;
+  --accent-fg: #ffffff;
+  --destructive: #dc2626;
+  --destructive-fg: #ffffff;
+}
+.dark {
+  --bg: #0f172a;
+  --fg: #f8fafc;
+  --card: #1b2336;
+  --card-fg: #f8fafc;
+  --muted: #94a3b8;
+  --border: #334155;
+  --accent: #22c55e;
+  --accent-fg: #0f172a;
+  --destructive: #dc2626;
+  --destructive-fg: #ffffff;
+}
+
+/* Tailwind's Preflight zeroes margin on every element, which breaks the
+   browser's native `dialog:modal { margin: auto }` centering. Chromium
+   still centers anyway, but Firefox honors the reset and drops modals in
+   the top-left corner - restore it explicitly for open modal dialogs. */
+dialog:modal {
+  margin: auto;
+}

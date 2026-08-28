@@ -1,0 +1,12 @@
+{
+  "name": "sftp-backup-ui-assets",
+  "private": true,
+  "description": "Tailwind CSS build for the sftp-backup-ui admin panel. Not a runtime dependency - only used to compile static/app.css.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./web/tailwind.css -o ./static/app.css --minify"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

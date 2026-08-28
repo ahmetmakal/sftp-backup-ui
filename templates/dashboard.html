@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SFTP Backup Kullanıcıları</title>
+  <script>
+    (function () {
+      var stored = localStorage.getItem('theme');
+      var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="min-h-screen bg-[var(--bg)] font-sans text-[var(--fg)] antialiased">
+  <header class="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--card)]/70 backdrop-blur-md">
+    <div class="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-3 sm:px-6">
+      <div class="flex items-center gap-3">
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)] text-[var(--accent-fg)]">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75" /></svg>
+        </span>
+        <h1 class="text-base font-extrabold tracking-tight">SFTP Backup Kullanıcıları</h1>
+      </div>
+      <button id="themeToggle" type="button" title="Tema değiştir"
+        class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] text-[var(--fg)] transition hover:bg-[var(--border)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]">
+        <svg class="hidden h-5 w-5 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <svg class="block h-5 w-5 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6">
+    {{if .Flash}}
+    <div id="flashBanner" class="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 transition-opacity duration-300 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400">
+      <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+      <div class="flex-1">{{.Flash}}</div>
+      <button type="button" data-dismiss-banner="flashBanner" class="cursor-pointer text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    {{end}}
+    {{if .Error}}
+    <div id="errorBanner" class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400">
+      <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
+      <div class="flex-1 whitespace-pre-wrap">{{.Error}}</div>
+      <button type="button" data-dismiss-banner="errorBanner" class="cursor-pointer text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+    {{end}}
+
+    <div class="grid grid-cols-2 gap-3 sm:max-w-sm">
+      <div class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
+        <div class="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">Backup Mount</div>
+        <div class="mt-1 font-mono text-2xl font-bold tabular-nums">{{len .Mounts}}</div>
+      </div>
+      <div class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
+        <div class="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">Kullanıcı</div>
+        <div class="mt-1 font-mono text-2xl font-bold tabular-nums">{{len .Users}}</div>
+      </div>
+    </div>
+
+    <section class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-extrabold tracking-tight">
+        <svg class="h-5 w-5 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 17.25v-.228a4.5 4.5 0 0 0-.12-1.03l-2.268-9.64a3.375 3.375 0 0 0-3.285-2.602H7.923a3.375 3.375 0 0 0-3.285 2.602l-2.268 9.64a4.5 4.5 0 0 0-.12 1.03v.228m19.5 0a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3m19.5 0a3 3 0 0 0-3-3H5.25a3 3 0 0 0-3 3m16.5 0h.008v.008h-.008v-.008Zm-3 0h.008v.008h-.008v-.008Z" /></svg>
+        Backup Mount'ları
+      </h2>
+      {{if not .Mounts}}
+      <p class="text-sm text-[var(--muted)]">Hiçbir /backupN mount'u bulunamadı (XFS + prjquota bekleniyor).</p>
+      {{else}}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-[var(--border)] text-left font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+              <th class="px-3 py-2">Yol</th>
+              <th class="px-3 py-2">Kota</th>
+              <th class="px-3 py-2">Disk Kullanımı</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border)]">
+            {{range .Mounts}}
+            <tr class="transition hover:bg-[var(--border)]/20">
+              <td class="px-3 py-2.5 font-mono text-xs text-[var(--fg)]">{{.Path}}</td>
+              <td class="px-3 py-2.5">
+                {{if .QuotaEnabled}}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>prjquota aktif</span>
+                {{else}}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>prjquota kapalı</span>
+                {{end}}
+              </td>
+              <td class="px-3 py-2.5">
+                {{$p := pct (sub .TotalBytes .AvailableBytes) .TotalBytes}}
+                <div class="whitespace-nowrap font-mono text-xs tabular-nums text-[var(--fg)]">{{gb (sub .TotalBytes .AvailableBytes)}} / {{gb .TotalBytes}} <span class="text-[var(--muted)]">({{gb .AvailableBytes}} kullanılabilir)</span></div>
+                <div class="mt-1.5 h-1.5 w-48 overflow-hidden rounded-full bg-[var(--border)]">
+                  <div class="h-full rounded-full {{if ge $p 90}}bg-red-500{{else if ge $p 75}}bg-amber-500{{else}}bg-[var(--accent)]{{end}}" style="width: {{$p}}%"></div>
+                </div>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{end}}
+    </section>
+
+    <section class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="flex items-center gap-2 text-sm font-extrabold tracking-tight">
+          <svg class="h-5 w-5 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" /></svg>
+          Kullanıcılar
+        </h2>
+        <a href="/users/new"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-fg)] shadow-sm transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+          Yeni Kullanıcı
+        </a>
+      </div>
+
+      {{if not .Users}}
+      <p class="text-sm text-[var(--muted)]">Henüz backup kullanıcısı yok.</p>
+      {{else}}
+      <div class="relative mb-3 max-w-xs">
+        <svg class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+        <input type="text" id="userSearch" placeholder="Ara (kullanıcı, mount, durum...)"
+          class="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] py-2 pl-9 pr-3 text-sm text-[var(--fg)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-[var(--border)] font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+              <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="username" data-sort-type="string" aria-sort="none">Kullanıcı<span class="sort-arrow w-3"></span></button></th>
+              <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="mount" data-sort-type="string" aria-sort="none">Mount<span class="sort-arrow w-3"></span></button></th>
+              <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="quota" data-sort-type="number" aria-sort="none">Kota (kullanılan / limit)<span class="sort-arrow w-3"></span></button></th>
+              <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="sftp" data-sort-type="number" aria-sort="none">SFTP<span class="sort-arrow w-3"></span></button></th>
+              <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="sshkey" data-sort-type="number" aria-sort="none">SSH Key<span class="sort-arrow w-3"></span></button></th>
+              <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="backup" data-sort-type="number" aria-sort="none">Yedekleme<span class="sort-arrow w-3"></span></button></th>
+              <th class="px-3 py-2">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border)]" id="usersTbody">
+            {{range .Users}}
+            <tr class="transition hover:bg-[var(--border)]/20"
+              data-sort-username="{{.Username}}"
+              data-sort-mount="{{.Mount}}"
+              data-sort-quota="{{if .Quota}}{{.Quota.UsedBytes}}{{else}}-1{{end}}"
+              data-sort-sftp="{{if .SFTPManaged}}2{{else if .SFTPActive}}1{{else}}0{{end}}"
+              data-sort-sshkey="{{if .HasSSHKey}}1{{else}}0{{end}}"
+              data-sort-backup="{{if .Backup}}{{.Backup.LastBackupAt.Unix}}{{else}}-1{{end}}">
+              <td class="px-3 py-2.5 font-medium">{{.Username}}</td>
+              <td class="px-3 py-2.5 font-mono text-xs text-[var(--muted)]">{{.Mount}}</td>
+              <td class="px-3 py-2.5">
+                {{if .Quota}}
+                {{$p := pct .Quota.UsedBytes .Quota.HardBytes}}
+                <div class="whitespace-nowrap font-mono text-xs tabular-nums text-[var(--fg)]">{{gb .Quota.UsedBytes}} / {{gb .Quota.HardBytes}}</div>
+                <div class="mt-1.5 h-1.5 w-36 overflow-hidden rounded-full bg-[var(--border)]">
+                  <div class="h-full rounded-full {{if ge $p 90}}bg-red-500{{else if ge $p 75}}bg-amber-500{{else}}bg-[var(--accent)]{{end}}" style="width: {{$p}}%"></div>
+                </div>
+                {{else}}
+                <span class="text-[var(--muted)]">kota kaydı yok</span>
+                {{end}}
+              </td>
+              <td class="px-3 py-2.5">
+                {{if .SFTPManaged}}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>aktif · yönetilen</span>
+                {{else if .SFTPActive}}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>aktif · manuel</span>
+                {{else}}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--border)]/50 px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)] ring-1 ring-inset ring-[var(--border)]"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>yok</span>
+                {{end}}
+              </td>
+              <td class="px-3 py-2.5">
+                {{if .HasSSHKey}}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>var</span>
+                {{else}}
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>yok</span>
+                {{end}}
+              </td>
+              <td class="px-3 py-2.5">
+                {{if .Backup}}
+                <div class="whitespace-nowrap">
+                  {{if eq .Backup.Type "cpanel"}}
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:ring-sky-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>cPanel</span>
+                  {{else if eq .Backup.Type "directadmin"}}
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-200 dark:bg-violet-950/40 dark:text-violet-400 dark:ring-violet-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>DirectAdmin</span>
+                  {{else}}
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--border)]/50 px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)] ring-1 ring-inset ring-[var(--border)]"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>Özel</span>
+                  {{end}}
+                </div>
+                <div class="mt-1 font-mono text-[11px] text-[var(--muted)]">
+                  {{if not .Backup.LastBackupAt.IsZero}}Son: {{date .Backup.LastBackupAt}} · {{end}}{{.Backup.AccountCount}} hesap
+                </div>
+                {{else}}
+                <span class="text-[var(--muted)]">veri yok</span>
+                {{end}}
+              </td>
+              <td class="px-3 py-2.5">
+                <div class="flex flex-wrap gap-1.5">
+                  {{if not .SFTPActive}}
+                  <form method="post" action="/users/{{.Username}}/sftp">
+                    <input type="hidden" name="mount" value="{{.Mount}}">
+                    <button type="submit"
+                      class="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-amber-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-500/30 transition hover:bg-amber-500/20 dark:text-amber-400">
+                      <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5 10.5 3l-1.5 6.75h6.75L9 21l1.5-6.75H3.75Z" /></svg>
+                      SFTP Etkinleştir
+                    </button>
+                  </form>
+                  {{end}}
+                  <button type="button" onclick="document.getElementById('quota-{{.Username}}').showModal()"
+                    class="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[var(--accent)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)]/30 transition hover:bg-[var(--accent)]/20">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                    Kota
+                  </button>
+                  <button type="button" onclick="document.getElementById('sshkey-{{.Username}}').showModal()"
+                    class="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[var(--accent)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)]/30 transition hover:bg-[var(--accent)]/20">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" /></svg>
+                    SSH Key
+                  </button>
+                  <button type="button" onclick="document.getElementById('delete-{{.Username}}').showModal()"
+                    class="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[var(--destructive)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--destructive)] ring-1 ring-inset ring-[var(--destructive)]/30 transition hover:bg-[var(--destructive)]/20">
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                    Sil
+                  </button>
+                </div>
+
+                <dialog id="quota-{{.Username}}" class="w-[90vw] max-w-sm rounded-xl border border-[var(--border)] bg-[var(--card)]/95 p-0 shadow-2xl backdrop-blur-xl backdrop:bg-black/60 backdrop:backdrop-blur-sm">
+                  <div class="p-5">
+                    <div class="mb-4 flex items-center justify-between">
+                      <h3 class="text-sm font-extrabold tracking-tight">Kota güncelle · {{.Username}}</h3>
+                      <button type="button" onclick="this.closest('dialog').close()" class="cursor-pointer text-[var(--muted)] hover:text-[var(--fg)]">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                    <form method="post" action="/users/{{.Username}}/quota" class="space-y-3">
+                      <input type="hidden" name="mount" value="{{.Mount}}">
+                      <div>
+                        <label class="mb-1 block text-xs font-semibold text-[var(--muted)]">Kota paketi</label>
+                        <select class="quota-preset w-full cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
+                          <option value="">Paket seçin (veya aşağıdan elle girin)</option>
+                          <option value="50g">Yönetilen I (1) — 50 GB</option>
+                          <option value="100g">Yönetilen II (2) — 100 GB</option>
+                          <option value="150g">Yönetilen III (3) — 150 GB</option>
+                          <option value="250g">Yönetilen IV (4) — 250 GB</option>
+                          <option value="500g">Yönetilen V (5) — 500 GB</option>
+                          <option value="750g">Yönetilen VI (6) — 750 GB</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-semibold text-[var(--muted)]">Yeni kota limiti</label>
+                        <input type="text" name="quota_size" placeholder="200g" required
+                          class="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 font-mono text-sm text-[var(--fg)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]">
+                      </div>
+                      <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" onclick="this.closest('dialog').close()" class="cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold text-[var(--muted)] hover:bg-[var(--border)]/40">Vazgeç</button>
+                        <button type="submit" class="cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-fg)] shadow-sm hover:brightness-110">Kaydet</button>
+                      </div>
+                    </form>
+                  </div>
+                </dialog>
+
+                <dialog id="sshkey-{{.Username}}" class="w-[90vw] max-w-sm rounded-xl border border-[var(--border)] bg-[var(--card)]/95 p-0 shadow-2xl backdrop-blur-xl backdrop:bg-black/60 backdrop:backdrop-blur-sm">
+                  <div class="p-5">
+                    <div class="mb-4 flex items-center justify-between">
+                      <h3 class="text-sm font-extrabold tracking-tight">SSH key ekle/değiştir · {{.Username}}</h3>
+                      <button type="button" onclick="this.closest('dialog').close()" class="cursor-pointer text-[var(--muted)] hover:text-[var(--fg)]">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                    <form method="post" action="/users/{{.Username}}/ssh-key" class="space-y-3">
+                      <input type="hidden" name="mount" value="{{.Mount}}">
+                      <div>
+                        <label class="mb-1 block text-xs font-semibold text-[var(--muted)]">Kaynak sunucuda anahtar oluşturma komutu</label>
+                        <div class="rounded-lg border border-[var(--border)] bg-[#0b0e14] p-3">
+                          <div class="mb-2 flex items-center justify-between">
+                            <span class="text-xs text-slate-400">Kaynak sunucuda (root) çalıştırın</span>
+                            <button type="button" class="copy-btn shrink-0 cursor-pointer rounded-md bg-white/10 px-2 py-1 text-xs font-semibold text-slate-200 transition hover:bg-white/20" data-copy-target="keygenCmd-{{.Username}}">
+                              Kopyala
+                            </button>
+                          </div>
+                          <pre id="keygenCmd-{{.Username}}" class="overflow-x-auto whitespace-pre font-mono text-xs text-emerald-400">ssh-keygen -t ed25519 -f /root/.ssh/backup_{{.Username}} -N ""
+cat /root/.ssh/backup_{{.Username}}.pub</pre>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="mb-1 block text-xs font-semibold text-[var(--muted)]">Public key</label>
+                        <textarea name="pub_key" rows="3" placeholder="ssh-ed25519 AAAA..." required
+                          class="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 font-mono text-xs text-[var(--fg)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"></textarea>
+                      </div>
+                      <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" onclick="this.closest('dialog').close()" class="cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold text-[var(--muted)] hover:bg-[var(--border)]/40">Vazgeç</button>
+                        <button type="submit" class="cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-fg)] shadow-sm hover:brightness-110">Kaydet</button>
+                      </div>
+                    </form>
+                  </div>
+                </dialog>
+
+                <dialog id="delete-{{.Username}}" class="w-[90vw] max-w-sm rounded-xl border border-[var(--border)] bg-[var(--card)]/95 p-0 shadow-2xl backdrop-blur-xl backdrop:bg-black/60 backdrop:backdrop-blur-sm">
+                  <div class="p-5">
+                    <div class="mb-4 flex items-center justify-between">
+                      <h3 class="text-sm font-extrabold tracking-tight text-[var(--destructive)]">Kullanıcıyı sil · {{.Username}}</h3>
+                      <button type="button" onclick="this.closest('dialog').close()" class="cursor-pointer text-[var(--muted)] hover:text-[var(--fg)]">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                      </button>
+                    </div>
+                    <form method="post" action="/users/{{.Username}}/delete" class="space-y-3" onsubmit="return confirm('{{.Username}} silinsin mi?');">
+                      <input type="hidden" name="mount" value="{{.Mount}}">
+                      <label class="flex cursor-pointer items-start gap-2 text-xs text-[var(--fg)]">
+                        <input type="checkbox" name="remove_home" class="mt-0.5 h-4 w-4 cursor-pointer rounded border-[var(--border)] text-[var(--destructive)] focus:ring-[var(--destructive)]/40">
+                        Yedek verisiyle (home dizini) birlikte tamamen sil
+                      </label>
+                      <div class="flex justify-end gap-2 pt-1">
+                        <button type="button" onclick="this.closest('dialog').close()" class="cursor-pointer rounded-lg px-3 py-2 text-xs font-semibold text-[var(--muted)] hover:bg-[var(--border)]/40">Vazgeç</button>
+                        <button type="submit" class="cursor-pointer rounded-lg bg-[var(--destructive)] px-3 py-2 text-xs font-semibold text-[var(--destructive-fg)] shadow-sm hover:brightness-110">Kullanıcıyı Sil</button>
+                      </div>
+                    </form>
+                  </div>
+                </dialog>
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+        <p id="userSearchEmpty" class="hidden py-4 text-center text-sm text-[var(--muted)]">Sonuç bulunamadı.</p>
+      </div>
+      {{end}}
+    </section>
+  </main>
+
+  <script>
+    // flash/error messages travel as ?flash=/?error= query params (no
+    // sessions in this app); strip them from the URL right after showing
+    // so a refresh or bookmark doesn't resurrect a stale message.
+    (function () {
+      var url = new URL(window.location.href);
+      if (url.searchParams.has('flash') || url.searchParams.has('error')) {
+        url.searchParams.delete('flash');
+        url.searchParams.delete('error');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      }
+    })();
+    function dismissBanner(el) {
+      if (!el) return;
+      el.classList.add('opacity-0');
+      setTimeout(function () { el.remove(); }, 300);
+    }
+    document.querySelectorAll('[data-dismiss-banner]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        dismissBanner(document.getElementById(btn.dataset.dismissBanner));
+      });
+    });
+    var flashBanner = document.getElementById('flashBanner');
+    if (flashBanner) {
+      setTimeout(function () { dismissBanner(flashBanner); }, 6000);
+    }
+    document.getElementById('themeToggle').addEventListener('click', function () {
+      var isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+    document.querySelectorAll('dialog').forEach(function (dlg) {
+      dlg.addEventListener('click', function (e) {
+        if (e.target === dlg) dlg.close();
+      });
+    });
+    document.querySelectorAll('.quota-preset').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        if (!this.value) return;
+        this.closest('form').querySelector('[name="quota_size"]').value = this.value;
+      });
+    });
+    function copyText(text, container) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      // Fallback for non-secure (plain HTTP) contexts. The temp textarea
+      // must live inside the same <dialog> as the button when one is open:
+      // showModal() makes everything outside the dialog inert, so a
+      // textarea appended to document.body can't be focused/selected and
+      // execCommand('copy') would silently no-op.
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      container.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); } finally { container.removeChild(ta); }
+      return Promise.resolve();
+    }
+    document.querySelectorAll('.copy-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = document.getElementById(btn.dataset.copyTarget);
+        var container = btn.closest('dialog') || document.body;
+        copyText(target.textContent, container).then(function () {
+          var original = btn.textContent;
+          btn.textContent = 'Kopyalandı!';
+          setTimeout(function () { btn.textContent = original; }, 1500);
+        });
+      });
+    });
+
+    // Client-side search + sort for the users table. Data lives entirely
+    // in the already-rendered DOM (no re-fetch), so filtering just toggles
+    // row visibility and sorting just reorders <tr> nodes in place - both
+    // preserve each row's dialogs/listeners since nodes are moved, not
+    // recreated.
+    (function () {
+      var searchInput = document.getElementById('userSearch');
+      var tbody = document.getElementById('usersTbody');
+      var emptyMsg = document.getElementById('userSearchEmpty');
+      if (!tbody) return;
+
+      function applySearch() {
+        var term = (searchInput.value || '').trim().toLowerCase();
+        var visible = 0;
+        Array.from(tbody.querySelectorAll('tr')).forEach(function (row) {
+          var match = !term || row.textContent.toLowerCase().indexOf(term) !== -1;
+          row.classList.toggle('hidden', !match);
+          if (match) visible++;
+        });
+        if (emptyMsg) emptyMsg.classList.toggle('hidden', visible !== 0);
+      }
+      if (searchInput) searchInput.addEventListener('input', applySearch);
+
+      function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+      var currentSort = { key: null, dir: 1 };
+      document.querySelectorAll('.sort-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var key = btn.dataset.sortKey;
+          var type = btn.dataset.sortType;
+          var dir = currentSort.key === key ? -currentSort.dir : 1;
+          currentSort = { key: key, dir: dir };
+
+          var dataKey = 'sort' + capitalize(key);
+          var rows = Array.from(tbody.querySelectorAll('tr'));
+          rows.sort(function (a, b) {
+            var av = a.dataset[dataKey];
+            var bv = b.dataset[dataKey];
+            if (type === 'number') {
+              return (parseFloat(av) - parseFloat(bv)) * dir;
+            }
+            return av.localeCompare(bv, 'tr') * dir;
+          });
+          rows.forEach(function (row) { tbody.appendChild(row); });
+
+          document.querySelectorAll('.sort-btn').forEach(function (b) {
+            var arrow = b.querySelector('.sort-arrow');
+            var active = b === btn;
+            b.closest('th').setAttribute('aria-sort', active ? (dir === 1 ? 'ascending' : 'descending') : 'none');
+            if (arrow) arrow.textContent = active ? (dir === 1 ? '▲' : '▼') : '';
+          });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
