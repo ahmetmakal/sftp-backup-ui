@@ -78,6 +78,34 @@ make css   # static/app.css üretir
 GOOS=linux GOARCH=amd64 go build ./...
 ```
 
+## Kaynak sunucu kurulumu (DirectAdmin)
+
+`sftp-backup-ui` yalnızca **hedef** (backup) sunucu tarafını yönetir. Kaynak
+tarafında bir DirectAdmin sunucusunun buraya SFTP+SSH-key ile yedek göndermesini
+istiyorsanız — DirectAdmin'in native Admin Backup arayüzü SSH key desteklemediği
+için — `contrib/directadmin-setup.sh` bunu otomatikleştirir: custom bir upload
+hook'u (`/usr/local/directadmin/scripts/custom/ftp_upload.php`) kurar,
+`backup.conf` ve `backup_crons.list`'i günceller.
+
+DirectAdmin sunucusunda **root olarak**:
+
+```sh
+./contrib/directadmin-setup.sh --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
+```
+
+Script bir SSH anahtar çifti üretir (varsa dokunmaz) ve public key'i ekrana basar —
+bunu panelde ilgili kullanıcının **"SSH Key ekle/değiştir"** akışına yapıştırın
+(veya kullanıcıyı henüz oluşturmadıysanız önce "Yeni Kullanıcı" ile oluşturun).
+Ardından bağlantıyı doğrulayın:
+
+```sh
+./contrib/directadmin-setup.sh --test-only --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
+```
+
+Script idempotent'tir — aynı parametrelerle tekrar çalıştırmak güvenlidir (anahtar
+tekrar üretilmez, hook/cron girişi güncellenir). Tüm seçenekler için
+`--help` kullanın.
+
 ## Konfigürasyon (env var'lar)
 
 | Değişken | Varsayılan | Açıklama |
