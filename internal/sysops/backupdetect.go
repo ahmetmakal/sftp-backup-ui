@@ -18,9 +18,14 @@ import (
 
 var (
 	dateDirRegexp      = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
-	archiveExtRegexp   = regexp.MustCompile(`(?i)\.(tar\.gz|tgz|tar|zip)$`)
+	archiveExtRegexp   = regexp.MustCompile(`(?i)\.(tar\.gz|tar\.zst|tgz|tar|zip)$`)
 	cpmovePrefixRegexp = regexp.MustCompile(`(?i)^cpmove-`)
 	legacyCPanelRegexp = regexp.MustCompile(`(?i)^backup-[\d.\-_]+_`)
+	// DirectAdmin's own Admin Backup/Transfer names archives
+	// <admin|reseller|user>.<owner>.<name>.tar.(gz|zst) - e.g.
+	// user.onizle.depogram.tar.zst, admin.root.admin.tar.zst. Confirmed
+	// against a real DirectAdmin 1.708 "All Users" backup run.
+	directAdminRegexp = regexp.MustCompile(`(?i)^(admin|reseller|user)\.[A-Za-z0-9_.-]+\.tar\.(gz|zst)$`)
 )
 
 const (
@@ -112,6 +117,7 @@ func detectFlatArchives(uploadDir string) *models.BackupInfo {
 	var latest time.Time
 	var latestArchive string
 	cpanelSignal := false
+	directAdminSignal := false
 	scanned := 0
 
 	_ = filepath.WalkDir(uploadDir, func(path string, d fs.DirEntry, err error) error {
@@ -136,6 +142,9 @@ func detectFlatArchives(uploadDir string) *models.BackupInfo {
 		if cpmovePrefixRegexp.MatchString(d.Name()) || legacyCPanelRegexp.MatchString(d.Name()) {
 			cpanelSignal = true
 		}
+		if directAdminRegexp.MatchString(d.Name()) {
+			directAdminSignal = true
+		}
 		info, infoErr := d.Info()
 		if infoErr == nil && info.ModTime().After(latest) {
 			latest = info.ModTime()
@@ -153,6 +162,8 @@ func detectFlatArchives(uploadDir string) *models.BackupInfo {
 	switch {
 	case cpanelSignal:
 		backupType = "cpanel"
+	case directAdminSignal:
+		backupType = "directadmin"
 	case latestArchive != "" && looksLikeDirectAdmin(latestArchive):
 		backupType = "directadmin"
 	}
