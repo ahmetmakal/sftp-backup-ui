@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# directadmin-setup.sh - idempotent setup of SSH-key SFTP backup uploads on a
-# DirectAdmin source server, targeting an sftp-backup-ui destination user.
+# directadmin-sftp-backup-setup.sh - idempotent setup of SSH-key SFTP backup
+# uploads on a DirectAdmin source server, targeting an sftp-backup-ui
+# destination user.
 #
 # DirectAdmin's native Admin Backup/Transfer only supports FTP/FTPS with a
 # password. This installs a custom upload hook
@@ -10,15 +11,23 @@
 # SFTP using an SSH key instead, and wires up backup.conf + a cron entry to
 # use it.
 #
-# Run as root ON the DirectAdmin server:
+# IMPORTANT: this must run ON the DirectAdmin server itself, as root - not
+# on your own machine. SSH into the DirectAdmin server first, copy the
+# script there (or paste it in), then run it locally on that server:
 #
-#   ./directadmin-setup.sh --hostname server.example.com --dest-host backup.example.com
+#   scp contrib/directadmin-sftp-backup-setup.sh root@<DA sunucusu>:/root/
+#   ssh root@<DA sunucusu>
+#   ./directadmin-sftp-backup-setup.sh --hostname server.example.com --dest-host backup.example.com
+#
+# --dest-host/--dest-port refer to the sftp-backup-ui destination server and
+# its SFTP port (default 22) - NOT whatever port/address you used to SSH
+# into this DirectAdmin server to run the script.
 #
 # After the first run, paste the printed public key into the sftp-backup-ui
 # panel for the matching destination user ("SSH Key ekle/değiştir"), then
 # verify with:
 #
-#   ./directadmin-setup.sh --test-only --hostname server.example.com --dest-host backup.example.com
+#   ./directadmin-sftp-backup-setup.sh --test-only --hostname server.example.com --dest-host backup.example.com
 #
 # Safe to re-run: keygen is skipped if the key already exists, and the hook
 # script / backup.conf / cron entry are all regenerated deterministically
@@ -37,14 +46,18 @@ TEST_ONLY="0"
 
 usage() {
   cat <<EOF
+Bu script'i DirectAdmin sunucusuna SSH ile bağlanıp ORADA, root olarak
+çalıştırın - kendi bilgisayarınızda değil.
+
 Kullanım: $0 --hostname <ad> --dest-host <backup-sunucusu> [seçenekler]
 
 Zorunlu:
   --hostname <ad>        Kaynak sunucu kimliği (SSH key dosya adı + varsayılan hedef kullanıcı adı)
-  --dest-host <adres>    sftp-backup-ui'nin çalıştığı backup hedef sunucusunun adresi
+  --dest-host <adres>    sftp-backup-ui'nin çalıştığı backup HEDEF sunucusunun adresi
 
 Opsiyonel:
-  --dest-port <port>     Varsayılan: 22
+  --dest-port <port>     Hedef backup sunucusunun SFTP portu (bu DirectAdmin sunucusuna
+                         bağlanmak için kullandığınız SSH portu DEĞİL). Varsayılan: 22
   --dest-user <ad>       Hedefteki chroot kullanıcı adı, varsayılan: --hostname ile aynı
   --dest-path <yol>      Varsayılan: /upload
   --schedule-hour <sa>   Cron saati (0-23), varsayılan: 3
@@ -77,7 +90,7 @@ done
 [ -n "${DEST_USER}" ] || DEST_USER="${HOSTNAME_ARG}"
 
 [ "$(id -u)" = "0" ] || die "root olarak çalıştırılmalı"
-[ -d /usr/local/directadmin ] || die "/usr/local/directadmin bulunamadı - bu bir DirectAdmin sunucusu değil"
+[ -d /usr/local/directadmin ] || die "/usr/local/directadmin bulunamadı. Bu script'i kendi bilgisayarınızda değil, SSH ile DirectAdmin sunucusuna bağlanıp ORADA çalıştırmanız gerekiyor."
 
 KEY_PATH="/root/.ssh/backup_${HOSTNAME_ARG}"
 DA_SSH_DIR="/usr/local/directadmin/data/admin/.backup_ssh"
@@ -148,7 +161,7 @@ mkdir -p "$(dirname "${HOOK_PATH}")"
 cat > "${HOOK_PATH}" <<'HOOK'
 #!/bin/bash
 #
-# sftp-backup-ui/contrib/directadmin-setup.sh tarafından üretildi - elle
+# sftp-backup-ui/contrib/directadmin-sftp-backup-setup.sh tarafından üretildi - elle
 # düzenlemeyin, script'i tekrar çalıştırıp güncelleyin.
 #
 # DirectAdmin Admin Backup/Transfer, FTP/FTPS yerine SSH-key ile SFTP

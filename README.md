@@ -83,23 +83,31 @@ GOOS=linux GOARCH=amd64 go build ./...
 `sftp-backup-ui` yalnızca **hedef** (backup) sunucu tarafını yönetir. Kaynak
 tarafında bir DirectAdmin sunucusunun buraya SFTP+SSH-key ile yedek göndermesini
 istiyorsanız — DirectAdmin'in native Admin Backup arayüzü SSH key desteklemediği
-için — `contrib/directadmin-setup.sh` bunu otomatikleştirir: custom bir upload
-hook'u (`/usr/local/directadmin/scripts/custom/ftp_upload.php`) kurar,
-`backup.conf` ve `backup_crons.list`'i günceller.
+için — `contrib/directadmin-sftp-backup-setup.sh` bunu otomatikleştirir: custom
+bir upload hook'u (`/usr/local/directadmin/scripts/custom/ftp_upload.php`)
+kurar, `backup.conf` ve `backup_crons.list`'i günceller.
 
-DirectAdmin sunucusunda **root olarak**:
+**Önemli: bu script'i kendi bilgisayarınızda değil, DirectAdmin sunucusunun
+kendisinde (SSH ile bağlanıp, root olarak) çalıştırmanız gerekir.**
 
 ```sh
-./contrib/directadmin-setup.sh --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
+scp contrib/directadmin-sftp-backup-setup.sh root@<directadmin-sunucusu>:/root/
+ssh root@<directadmin-sunucusu>
+./directadmin-sftp-backup-setup.sh --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
 ```
+
+`--dest-host`/`--dest-port`, sftp-backup-ui'nin çalıştığı **hedef** backup
+sunucusunu ve onun SFTP portunu (varsayılan `22`) belirtir — DirectAdmin
+sunucusuna bağlanmak için kullandığınız SSH portuyla karıştırmayın, script
+bunu hiç bilmesi gerekmez (zaten o sunucunun içinde çalışıyor olacak).
 
 Script bir SSH anahtar çifti üretir (varsa dokunmaz) ve public key'i ekrana basar —
 bunu panelde ilgili kullanıcının **"SSH Key ekle/değiştir"** akışına yapıştırın
 (veya kullanıcıyı henüz oluşturmadıysanız önce "Yeni Kullanıcı" ile oluşturun).
-Ardından bağlantıyı doğrulayın:
+Ardından bağlantıyı doğrulayın (yine DirectAdmin sunucusunun içinden):
 
 ```sh
-./contrib/directadmin-setup.sh --test-only --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
+./directadmin-sftp-backup-setup.sh --test-only --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
 ```
 
 Script idempotent'tir — aynı parametrelerle tekrar çalıştırmak güvenlidir (anahtar
