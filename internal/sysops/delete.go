@@ -9,9 +9,12 @@ import "fmt"
 // than via userdel -r, since the chroot dir is root:root-owned (required by
 // sshd) and userdel refuses to recursively remove a directory the deleted
 // user doesn't own.
-func DeleteBackupUser(sshdConfigDir, sshdService, username, homeDir string, removeHome bool) error {
+func DeleteBackupUser(sshdConfigDir, sshdService, rsyncdDir, rsyncdService, username, homeDir string, removeHome bool) error {
 	if err := RemoveSSHDDropin(sshdConfigDir, sshdService, username); err != nil {
 		return fmt.Errorf("remove sftp chroot config: %w", err)
+	}
+	if err := RemoveRsyncModule(rsyncdDir, rsyncdService, username); err != nil {
+		return fmt.Errorf("remove rsync module: %w", err)
 	}
 	if err := DeleteUser(username); err != nil {
 		return fmt.Errorf("delete system user: %w", err)

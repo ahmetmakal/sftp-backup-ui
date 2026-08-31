@@ -19,6 +19,9 @@ type Config struct {
 	SSHDMainConfig string
 	SSHDService    string
 	ProjectIDBase  int
+
+	RsyncdDir     string
+	RsyncdService string
 }
 
 func Load() (*Config, error) {
@@ -48,6 +51,8 @@ func Load() (*Config, error) {
 		SSHDMainConfig: getEnv("SSHD_MAIN_CONFIG", "/etc/ssh/sshd_config"),
 		SSHDService:    getEnv("SSHD_SERVICE_NAME", "sshd"),
 		ProjectIDBase:  projectIDBase,
+		RsyncdDir:      getEnv("RSYNCD_DIR", "/etc/rsyncd.d"),
+		RsyncdService:  getEnv("RSYNCD_SERVICE_NAME", "rsyncd"),
 	}, nil
 }
 

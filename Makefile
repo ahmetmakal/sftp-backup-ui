@@ -32,14 +32,21 @@ deploy: build
 	$(RSYNC) --delete static/ $(SSH_TARGET):$(REMOTE_DIR)/static/
 	$(RSYNC) deploy/env.example $(SSH_TARGET):$(REMOTE_DIR)/env.example
 	$(RSYNC) deploy/$(SERVICE_NAME) $(SSH_TARGET):/etc/systemd/system/$(SERVICE_NAME)
+	$(RSYNC) deploy/rsyncd.service $(SSH_TARGET):/etc/systemd/system/rsyncd.service
 	$(SSH) 'chmod +x $(REMOTE_DIR)/bin/$(APP_NAME); \
 		test -f $(REMOTE_ENV_DIR)/env || install -m 600 $(REMOTE_DIR)/env.example $(REMOTE_ENV_DIR)/env; \
+		mkdir -p /etc/rsyncd.d; \
 		systemctl daemon-reload; \
 		systemctl enable --now $(SERVICE_NAME); \
 		systemctl restart $(SERVICE_NAME)'
 	@echo ""
 	@echo "Deploy tamam. İlk kurulumsa şimdi $(REMOTE_ENV_DIR)/env dosyasını sunucuda düzenleyip"
 	@echo "ADMIN_PASSWORD'u değiştirin, sonra: make restart"
+	@echo ""
+	@echo "rsyncd.service dosyası kopyalandı ama BAŞLATILMADI - rsync desteğini"
+	@echo "kullanmak için README'deki 'rsync (rsyncd) kurulumu' bölümündeki tek"
+	@echo "seferlik /etc/rsyncd.conf hazırlığını yapıp elle etkinleştirin:"
+	@echo "  systemctl enable --now rsyncd"
 
 restart:
 	$(SSH) 'systemctl restart $(SERVICE_NAME)'

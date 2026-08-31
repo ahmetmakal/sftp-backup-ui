@@ -114,6 +114,46 @@ Script idempotent'tir — aynı parametrelerle tekrar çalıştırmak güvenlidi
 tekrar üretilmez, hook/cron girişi güncellenir). Tüm seçenekler için
 `--help` kullanın.
 
+## rsync ile yedekleme (rsyncd)
+
+SSH-key + SFTP chroot'un yanında, isteyen kaynaklar için **rsync daemon**
+üzerinden de yedek alınabilir. Bu, mevcut chroot kullanıcılarına hiç
+dokunmayan, tamamen ayrı bir mekanizma (SSH key değil, kullanıcı adı +
+parola ile kimlik doğrulama — `secrets file` düz metin sır tutar, bu yüzden
+SSH+key kadar güçlü değildir; ek bir seçenek olarak düşünün, yerine değil).
+
+**Tek seferlik sunucu hazırlığı** (`make deploy` bunları otomatik yapmaz,
+sistemin paylaşılan config dosyalarına dokunmadan bırakır):
+
+```sh
+# 1) rsyncd.service dosyası make deploy ile zaten kopyalandı, sadece etkinleştirin:
+mkdir -p /etc/rsyncd.d
+
+# 2) /etc/rsyncd.conf'a temel ayarları + per-user modüllerin include'unu ekleyin:
+cat >> /etc/rsyncd.conf <<'EOF'
+
+use chroot = yes
+max connections = 10
+pid file = /var/run/rsyncd.pid
+log file = /var/log/rsyncd.log
+timeout = 900
+
+&include /etc/rsyncd.d
+EOF
+
+# 3) firewall'da 873/tcp'yi açın:
+firewall-cmd --permanent --add-port=873/tcp && firewall-cmd --reload
+
+# 4) servisi başlatın:
+systemctl daemon-reload
+systemctl enable --now rsyncd
+```
+
+Bundan sonra panelde bir kullanıcının satırında **"Rsync Etkinleştir"**
+butonuna basmak yeterli — modül + rastgele parola otomatik üretilir ve
+**bir kereliğine** ekranda gösterilir (kopyalayıp kaynak sunucuya aktarın,
+panelde tekrar görüntülenemez).
+
 ## Konfigürasyon (env var'lar)
 
 | Değişken | Varsayılan | Açıklama |
@@ -126,6 +166,8 @@ tekrar üretilmez, hook/cron girişi güncellenir). Tüm seçenekler için
 | `SSHD_MAIN_CONFIG` | `/etc/ssh/sshd_config` | Manuel `Match User` bloklarını tespit için |
 | `SSHD_SERVICE_NAME` | `sshd` | `systemctl reload` için servis adı |
 | `PROJECT_ID_BASE` | `100` | XFS proje ID ataması için taban değer |
+| `RSYNCD_DIR` | `/etc/rsyncd.d` | Yönetilen rsync modül/secret dosyalarının yeri |
+| `RSYNCD_SERVICE_NAME` | `rsyncd` | rsync daemon'ı için systemd servis adı |
 
 ## Lisans
 
