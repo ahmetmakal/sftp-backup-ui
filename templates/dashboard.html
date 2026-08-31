@@ -190,8 +190,16 @@
                   <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--border)]/50 px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)] ring-1 ring-inset ring-[var(--border)]"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>Özel</span>
                   {{end}}
                 </div>
-                <div class="mt-1 font-mono text-[11px] text-[var(--muted)]">
-                  {{if not .Backup.LastBackupAt.IsZero}}Son: {{date .Backup.LastBackupAt}} · {{end}}{{.Backup.AccountCount}} hesap
+                <div class="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-[11px] text-[var(--muted)]">
+                  {{if not .Backup.LastBackupAt.IsZero}}
+                  {{$d := daysSince .Backup.LastBackupAt}}
+                  <span class="inline-flex items-center gap-1 font-semibold {{if le $d 1}}text-emerald-600 dark:text-emerald-400{{else if eq $d 2}}text-amber-600 dark:text-amber-400{{else}}text-red-600 dark:text-red-400{{end}}">
+                    <span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{if eq $d 0}}bugün{{else if eq $d 1}}1 gün önce{{else}}{{$d}} gün önce{{end}}
+                  </span>
+                  <span>· {{date .Backup.LastBackupAt}} · {{.Backup.AccountCount}} hesap</span>
+                  {{else}}
+                  <span>{{.Backup.AccountCount}} hesap</span>
+                  {{end}}
                 </div>
                 {{else}}
                 <span class="text-[var(--muted)]">veri yok</span>

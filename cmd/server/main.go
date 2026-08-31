@@ -40,6 +40,13 @@ func main() {
 			}
 			return t.Format("02.01.2006 15:04")
 		},
+		"daysSince": func(t time.Time) int {
+			d := int(time.Since(t).Hours() / 24)
+			if d < 0 {
+				return 0
+			}
+			return d
+		},
 	})
 	router.LoadHTMLGlob("templates/*.html")
 	router.Static("/static", "./static")
