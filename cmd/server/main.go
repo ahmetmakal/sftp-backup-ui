@@ -63,6 +63,7 @@ func main() {
 	authorized.POST("/users/:username/ssh-key", h.UpdateSSHKey)
 	authorized.POST("/users/:username/sftp", h.EnableSFTP)
 	authorized.POST("/users/:username/rsync", h.EnableRsync)
+	authorized.POST("/users/:username/rsync/disable", h.DisableRsync)
 	authorized.POST("/users/:username/delete", h.DeleteUser)
 
 	log.Printf("listening on %s", cfg.ListenAddr)
