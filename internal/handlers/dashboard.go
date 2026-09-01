@@ -10,7 +10,7 @@ import (
 // Dashboard is the home page: live mounts + users + quotas, re-scanned from
 // the system on every request.
 func (h *Handlers) Dashboard(c *gin.Context) {
-	data, err := sysops.LoadDashboard(h.cfg.MountRegex, h.cfg.SSHDConfigDir, h.cfg.SSHDMainConfig, h.cfg.RsyncdDir)
+	data, err := sysops.LoadDashboard(h.cfg.MountRegex, h.cfg.SSHDConfigDir, h.cfg.SSHDMainConfig)
 	if err != nil {
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
 			"Message": "Sistem durumu okunamadı: " + err.Error(),

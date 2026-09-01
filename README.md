@@ -114,45 +114,53 @@ Script idempotent'tir — aynı parametrelerle tekrar çalıştırmak güvenlidi
 tekrar üretilmez, hook/cron girişi güncellenir). Tüm seçenekler için
 `--help` kullanın.
 
-## rsync ile yedekleme (rsyncd)
+## Chroot + gerçek shell: SFTP'nin yanında rsync/scp de otomatik çalışır
 
-SSH-key + SFTP chroot'un yanında, isteyen kaynaklar için **rsync daemon**
-üzerinden de yedek alınabilir. Bu, mevcut chroot kullanıcılarına hiç
-dokunmayan, tamamen ayrı bir mekanizma (SSH key değil, kullanıcı adı +
-parola ile kimlik doğrulama — `secrets file` düz metin sır tutar, bu yüzden
-SSH+key kadar güçlü değildir; ek bir seçenek olarak düşünün, yerine değil).
+"SFTP Etkinleştir" (veya yeni kullanıcı oluşturma), kullanıcıyı sadece
+SFTP'ye değil, kendi chroot'u içinde çalışan gerçek bir shell'e de kavuşturur
+— ayrı bir "rsync'i aç" adımı yoktur, bu SFTP kurulumunun kendisinin bir
+parçasıdır. Pratikte bunun anlamı: aynı SSH key ile hem SFTP hem `rsync -e
+ssh` hem `scp` çalışır — cPanel WHM'in native **"Rsync"** backup hedef tipi
+dahil (o, SSH üzerinden `rsync --server` çalıştırır; salt SFTP-forced bir
+hesapta bu "bad password or master process exited unexpectedly" gibi
+yanıltıcı bir hatayla başarısız olurdu).
 
-**Tek seferlik sunucu hazırlığı** (`make deploy` bunları otomatik yapmaz,
-sistemin paylaşılan config dosyalarına dokunmadan bırakır):
+Mekanizma: sshd'nin `Match User` bloğunda `ForceCommand` hiç yazılmaz.
+SFTP subsystem isteği zaten global `Subsystem sftp` yapılandırmasından
+geçtiği için etkilenmez; `ForceCommand` olmayınca doğrudan komut çalıştırma
+(`rsync -e ssh`) ve interactive login da artık kullanıcının gerçek shell'ine
+(`/bin/bash`) ulaşır. Bu shell'in chroot içinde çalışabilmesi için gereken
+`bash`, `rsync`, `sftp-server` binary'leri, birkaç temel coreutils komutu
+(`mkdir`, `mv`, `rm`, `cat`, `chmod`, `stat`, `df`, `test`, `ls` —
+`internal/sysops/chrootenv.go`'daki `coreutilsPaths`) ve bunların güncel
+shared library bağımlılıkları (`ldd` ile her etkinleştirmede taze
+hesaplanır), `/dev/null`, ve sadece o kullanıcının kendi kaydını içeren
+minimal `/etc/passwd`+`/etc/group` — hepsi chroot'a **salt-okunur
+bind-mount** edilir (host'taki gerçek dosyalara bağlı, kopya değil) ve
+`/etc/fstab`'a kalıcı olarak yazılır.
 
-```sh
-# 1) rsyncd.service dosyası make deploy ile zaten kopyalandı, sadece etkinleştirin:
-mkdir -p /etc/rsyncd.d
+Bu coreutils seti baştan değil, gerçek doğrulama denemelerinde ortaya çıkan
+"child exited with code 127" hatalarından sonra eklendi: cPanel WHM'in
+kendi Rsync hedef doğrulaması, test dosyasını rsync ile yükleyip ardından
+düz bir `mv` komutuyla yeniden adlandırıyor; rsync-over-ssh transport'ları
+genel olarak hedef dizini `mkdir -p` gibi düz kabuk komutlarıyla da
+oluşturabiliyor. Yani bu, önceden tahmin edilip eklenmiş değil, gerçek
+istemci davranışına göre genişletilmiş bir liste.
 
-# 2) /etc/rsyncd.conf'a temel ayarları + per-user modüllerin include'unu ekleyin:
-cat >> /etc/rsyncd.conf <<'EOF'
+**Bilinçli sınır:** chroot'a `vim`, `ps`, `grep`, `tar` gibi daha geniş
+interaktif/idari araçlar eklenmez — sadece rsync/sftp/scp'nin, onu
+doğrulayan/tetikleyen otomasyon araçlarının (cPanel, DirectAdmin vb.) ve
+temel dosya listeleme/yönetiminin ihtiyaç duyabileceği komutlar var. Bir
+kullanıcı interactive SSH login yaparsa yukarıdaki listenin dışında
+çalıştırabileceği harici bir komut yoktur; host filesystem'ine ya da diğer
+kullanıcılara hiçbir erişimi olmaz (chroot hâlâ geçerli).
 
-use chroot = yes
-max connections = 10
-pid file = /var/run/rsyncd.pid
-log file = /var/log/rsyncd.log
-timeout = 900
-
-&include /etc/rsyncd.d
-EOF
-
-# 3) firewall'da 873/tcp'yi açın:
-firewall-cmd --permanent --add-port=873/tcp && firewall-cmd --reload
-
-# 4) servisi başlatın:
-systemctl daemon-reload
-systemctl enable --now rsyncd
-```
-
-Bundan sonra panelde bir kullanıcının satırında **"Rsync Etkinleştir"**
-butonuna basmak yeterli — modül + rastgele parola otomatik üretilir ve
-**bir kereliğine** ekranda gösterilir (kopyalayıp kaynak sunucuya aktarın,
-panelde tekrar görüntülenemez).
+**Bakım notu:** bind-mount'lar host'taki gerçek dosyaya bağlı olduğu için
+çoğu güncelleme (paket içeriği değişse bile) otomatik yansır; ama bir
+`dnf update` dosyayı olduğu yerde değil de yeniden oluşturarak değiştirirse
+mount "bayatlayabilir" — böyle bir durumda ilgili kullanıcıda "SFTP +
+Rsync Etkinleştir"e tekrar basmak (idempotent, mount'ları tazeler)
+yeterlidir.
 
 ## Konfigürasyon (env var'lar)
 
@@ -166,8 +174,6 @@ panelde tekrar görüntülenemez).
 | `SSHD_MAIN_CONFIG` | `/etc/ssh/sshd_config` | Manuel `Match User` bloklarını tespit için |
 | `SSHD_SERVICE_NAME` | `sshd` | `systemctl reload` için servis adı |
 | `PROJECT_ID_BASE` | `100` | XFS proje ID ataması için taban değer |
-| `RSYNCD_DIR` | `/etc/rsyncd.d` | Yönetilen rsync modül/secret dosyalarının yeri |
-| `RSYNCD_SERVICE_NAME` | `rsyncd` | rsync daemon'ı için systemd servis adı |
 
 ## Lisans
 

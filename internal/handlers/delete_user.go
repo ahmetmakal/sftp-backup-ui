@@ -43,5 +43,5 @@ func (h *Handlers) doDeleteUser(username, mount string, removeHome bool) error {
 	}
 
 	homeDir := filepath.Join(mount, username)
-	return sysops.DeleteBackupUser(h.cfg.SSHDConfigDir, h.cfg.SSHDService, h.cfg.RsyncdDir, h.cfg.RsyncdService, username, homeDir, removeHome)
+	return sysops.DeleteBackupUser(h.cfg.SSHDConfigDir, h.cfg.SSHDService, username, homeDir, removeHome)
 }

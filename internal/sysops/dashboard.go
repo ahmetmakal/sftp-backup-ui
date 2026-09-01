@@ -15,7 +15,7 @@ type DashboardData struct {
 	Users  []models.BackupUser
 }
 
-func LoadDashboard(mountPattern *regexp.Regexp, sshdConfigDir, sshdMainConfig, rsyncdDir string) (*DashboardData, error) {
+func LoadDashboard(mountPattern *regexp.Regexp, sshdConfigDir, sshdMainConfig string) (*DashboardData, error) {
 	mounts, err := DiscoverMounts(mountPattern)
 	if err != nil {
 		return nil, err
@@ -42,14 +42,13 @@ func LoadDashboard(mountPattern *regexp.Regexp, sshdConfigDir, sshdMainConfig, r
 		mount := filepath.Dir(e.HomeDir)
 		active, managed := SFTPStatus(sshdConfigDir, sshdMainConfig, e.Username)
 		bu := models.BackupUser{
-			Username:     e.Username,
-			Mount:        mount,
-			HomeDir:      e.HomeDir,
-			SFTPActive:   active,
-			SFTPManaged:  managed,
-			HasSSHKey:    HasAuthorizedKeys(e.HomeDir),
-			RsyncEnabled: HasRsyncModule(rsyncdDir, e.Username),
-			Backup:       DetectBackup(filepath.Join(e.HomeDir, "upload")),
+			Username:    e.Username,
+			Mount:       mount,
+			HomeDir:     e.HomeDir,
+			SFTPActive:  active,
+			SFTPManaged: managed,
+			HasSSHKey:   HasAuthorizedKeys(e.HomeDir),
+			Backup:      DetectBackup(filepath.Join(e.HomeDir, "upload")),
 		}
 		if report, ok := quotaByMount[mount]; ok {
 			if q, ok := report[e.Username]; ok {

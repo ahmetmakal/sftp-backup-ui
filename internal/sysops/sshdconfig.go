@@ -12,7 +12,6 @@ import (
 const sshdDropinTemplate = `# Managed by sftp-backup-ui - do not edit by hand.
 Match User %s
     ChrootDirectory %s
-    ForceCommand internal-sftp
     AllowTcpForwarding no
     X11Forwarding no
 `
@@ -25,6 +24,12 @@ func dropinPath(sshdConfigDir, username string) string {
 // sshd configuration, and reloads sshd. If validation fails the drop-in is
 // removed again so a bad config never gets left behind, and sshd is never
 // reloaded with it.
+//
+// There is no ForceCommand: the global sshd_config's `Subsystem sftp`
+// directive handles plain SFTP regardless, and leaving ForceCommand unset
+// lets direct command exec (rsync -e ssh) and interactive logins reach the
+// account's real shell instead. See EnableChrootShell (chrootenv.go) for
+// what makes that shell actually usable inside the jail.
 func WriteSSHDDropin(sshdConfigDir, sshdService, username, chrootDir string) error {
 	path := dropinPath(sshdConfigDir, username)
 	content := fmt.Sprintf(sshdDropinTemplate, username, chrootDir)

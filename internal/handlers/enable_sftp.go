@@ -43,5 +43,8 @@ func (h *Handlers) doEnableSFTP(username, mount string) error {
 	}
 
 	homeDir := filepath.Join(mount, username)
-	return sysops.WriteSSHDDropin(h.cfg.SSHDConfigDir, h.cfg.SSHDService, username, homeDir)
+	if err := sysops.WriteSSHDDropin(h.cfg.SSHDConfigDir, h.cfg.SSHDService, username, homeDir); err != nil {
+		return err
+	}
+	return sysops.EnableChrootShell(username, homeDir)
 }

@@ -73,6 +73,16 @@ func CreateBackupUser(p CreateUserParams) error {
 		}
 	})
 
+	if err := EnableChrootShell(p.Username, homeDir); err != nil {
+		undo()
+		return fmt.Errorf("configure chroot shell: %w", err)
+	}
+	rollback = append(rollback, func() {
+		if err := DisableChrootShell(p.Username, homeDir); err != nil {
+			log.Printf("rollback: failed to disable chroot shell for %s: %v", p.Username, err)
+		}
+	})
+
 	projectID, err := NextProjectID(p.ProjectIDBase)
 	if err != nil {
 		undo()
