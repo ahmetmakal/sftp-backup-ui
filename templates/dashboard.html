@@ -135,7 +135,6 @@
               <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="username" data-sort-type="string" aria-sort="none">Kullanıcı<span class="sort-arrow w-3"></span></button></th>
               <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="mount" data-sort-type="string" aria-sort="none">Mount<span class="sort-arrow w-3"></span></button></th>
               <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="quota" data-sort-type="number" aria-sort="none">Kota (kullanılan / limit)<span class="sort-arrow w-3"></span></button></th>
-              <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="sftp" data-sort-type="number" aria-sort="none">SFTP<span class="sort-arrow w-3"></span></button></th>
               <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="sshkey" data-sort-type="number" aria-sort="none">SSH Key<span class="sort-arrow w-3"></span></button></th>
               <th class="px-3 py-2"><button type="button" class="sort-btn inline-flex cursor-pointer items-center gap-1" data-sort-key="backup" data-sort-type="number" aria-sort="none">Yedekleme<span class="sort-arrow w-3"></span></button></th>
               <th class="px-3 py-2">İşlemler</th>
@@ -147,7 +146,6 @@
               data-sort-username="{{.Username}}"
               data-sort-mount="{{.Mount}}"
               data-sort-quota="{{if .Quota}}{{.Quota.UsedBytes}}{{else}}-1{{end}}"
-              data-sort-sftp="{{if .SFTPManaged}}2{{else if .SFTPActive}}1{{else}}0{{end}}"
               data-sort-sshkey="{{if .HasSSHKey}}1{{else}}0{{end}}"
               data-sort-backup="{{if .Backup}}{{.Backup.LastBackupAt.Unix}}{{else}}-1{{end}}">
               <td class="px-3 py-2.5 font-medium">{{.Username}}</td>
@@ -161,15 +159,6 @@
                 </div>
                 {{else}}
                 <span class="text-[var(--muted)]">kota kaydı yok</span>
-                {{end}}
-              </td>
-              <td class="px-3 py-2.5">
-                {{if .SFTPManaged}}
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>aktif · yönetilen</span>
-                {{else if .SFTPActive}}
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-900"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>aktif · manuel</span>
-                {{else}}
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--border)]/50 px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)] ring-1 ring-inset ring-[var(--border)]"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>yok</span>
                 {{end}}
               </td>
               <td class="px-3 py-2.5">
