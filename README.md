@@ -209,19 +209,18 @@ systemctl enable --now nfs-server
 firewall-cmd --permanent --add-port=2049/tcp && firewall-cmd --reload
 ```
 
-**Kaynak sunucu tarafında** (panelin gösterdiği hazır komut):
+**Kaynak sunucu tarafında** (panelin gösterdiği hazır komut — `/etc/fstab`'a
+kalıcı bir satır ekleyip hemen mount eder):
 
 ```sh
-mkdir -p /backup
-mount -t nfs4 <backup-sunucusu>:<kullanıcının upload dizini> /backup
+mkdir -p /backup && echo "<backup-sunucusu>:<kullanıcının upload dizini> /backup nfs4 rw,_netdev,noatime 0 0" >> /etc/fstab && systemctl daemon-reload && mount /backup
 ```
 
 Mount, kaynak sunucuda **root** gerektirir — SSH-key modelinden farklı
-olarak burada root yetkisi şart. Kalıcı olması için kaynak sunucunun kendi
-`/etc/fstab`'ına eklenmesi (veya `systemd.mount`/`autofs` kullanılması)
-önerilir; bu, hedef (backup) sunucusundaki bu araç tarafından değil, kaynak
-sunucuda elle yapılmalıdır. Mount tamamlandıktan sonra DirectAdmin/cPanel'in
-yedekleme hedefi bu mount noktasına ("Local"/"Yerel" hedef tipi) gösterilir.
+olarak burada root yetkisi şart; bu, hedef (backup) sunucusundaki bu araç
+tarafından değil, kaynak sunucuda elle yapılmalıdır. Mount tamamlandıktan
+sonra DirectAdmin/cPanel'in yedekleme hedefi bu mount noktasına
+("Local"/"Yerel" hedef tipi) gösterilir.
 
 "NFS Kapat", SFTP/SSH-key erişimine hiç dokunmadan sadece export'u kaldırır.
 

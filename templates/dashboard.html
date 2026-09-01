@@ -345,8 +345,7 @@ cat /root/.ssh/backup_{{.Username}}.pub</pre>
                               Kopyala
                             </button>
                           </div>
-                          <pre id="nfsMountCmd-{{.Username}}" class="overflow-x-auto whitespace-pre font-mono text-xs text-emerald-400">mkdir -p /backup
-mount -t nfs4 {{$.DestHost}}:{{.HomeDir}}/upload /backup</pre>
+                          <pre id="nfsMountCmd-{{.Username}}" class="overflow-x-auto whitespace-pre font-mono text-xs text-emerald-400">mkdir -p /backup && echo "{{$.DestHost}}:{{.HomeDir}}/upload /backup nfs4 rw,_netdev,noatime 0 0" >> /etc/fstab && systemctl daemon-reload && mount /backup</pre>
                         </div>
                       </div>
                       <div class="flex justify-end gap-2 pt-1">
