@@ -162,6 +162,69 @@ mount "bayatlayabilir" — böyle bir durumda ilgili kullanıcıda "SFTP +
 Rsync Etkinleştir"e tekrar basmak (idempotent, mount'ları tazeler)
 yeterlidir.
 
+## NFS ile yedekleme (disk alanı yetersiz kaynak sunucular için)
+
+Bazı kaynak sunucuların diski o kadar dolu ki, yedekleme yazılımı önce
+yerelde bir arşiv oluşturup sonra SFTP/rsync ile göndermek için yeterli boş
+alan bulamıyor — bu yüzden hiç yedek alamıyorlar. Bunun çözümü: bu
+kullanıcının `upload/` dizinini **NFSv4** ile doğrudan kaynak sunucuya
+mount etmek; yedekleme yazılımı hiç yerel disk kullanmadan doğrudan ağ
+üzerinden buraya yazar.
+
+Bu, SFTP/SSH-key modelinden **tamamen ayrı, farklı bir güvenlik modeline**
+sahip bir erişim yöntemidir — SSH-key yerine **IP tabanlı** kimlik
+doğrulama kullanır, kriptografik olarak SSH-key kadar güçlü değildir.
+Panelde bir kullanıcı için "NFS Etkinleştir"e bastığınızda:
+
+- Kaynak sunucunun IP'sini (birden fazla olabilir) girersiniz — sadece o
+  IP'ler bu export'u mount edebilir (`/etc/exports.d/<kullanıcı>.exports`,
+  `sshd_config.d` ile aynı include-dosyası mantığı, ana `/etc/exports`'a
+  hiç dokunulmaz).
+- Export edilen dizine yazan **herkes** (kaynak sunucuda root dahil, hangi
+  uid ile yazarsa yazsın) `all_squash` ile bu kullanıcının kendi sabit
+  uid/gid'ine eşlenir — kaynak sunucu tamamen ele geçirilse bile saldırgan
+  sadece bu kullanıcının kendi kota-sınırlı dizinine yazabilir, başka
+  hiçbir şeye erişemez.
+- Aynı `upload/` dizini olduğu için mevcut XFS project kotası olduğu gibi
+  geçerli olmaya devam eder (kota dizin bazlı çalışır, protokolden
+  bağımsız) ve panel yine aynı dosyaları "yedekleme" olarak tanır. Gerçek
+  bir Linux istemciden `dd` ile yazılan veri, doğrulama sırasında
+  `xfs_quota report`'a anında yansıdı.
+- Export `insecure` ile açılır (istemcinin ayrıcalıklı `<1024` porttan
+  bağlanma zorunluluğu yoktur) — varsayılan "secure" davranış, kaynağın
+  NAT/load-balancer arkasında olduğu (orijinal kaynak portu korunmayan) her
+  durumda mount'u sessizce "Operation not permitted" ile reddediyor; bu,
+  gerçek bir mount denemesinde doğrulandı.
+
+**Tek seferlik sunucu hazırlığı** (`make deploy` bunu otomatik yapmaz):
+
+```sh
+dnf install -y nfs-utils
+
+# Sadece NFSv4 - v2/v3 hiç açılmaz, firewall'da tek port yeterli olur:
+sed -i '/^\[nfsd\]/,/^\[/{s/^#\?vers3=.*/vers3=n/}' /etc/nfs.conf
+grep -q '^\[nfsd\]' /etc/nfs.conf || printf '\n[nfsd]\nvers3=n\n' >> /etc/nfs.conf
+
+systemctl enable --now nfs-server
+firewall-cmd --permanent --add-port=2049/tcp && firewall-cmd --reload
+```
+
+**Kaynak sunucu tarafında** (panelin gösterdiği hazır komut):
+
+```sh
+mkdir -p /backup
+mount -t nfs4 <backup-sunucusu>:<kullanıcının upload dizini> /backup
+```
+
+Mount, kaynak sunucuda **root** gerektirir — SSH-key modelinden farklı
+olarak burada root yetkisi şart. Kalıcı olması için kaynak sunucunun kendi
+`/etc/fstab`'ına eklenmesi (veya `systemd.mount`/`autofs` kullanılması)
+önerilir; bu, hedef (backup) sunucusundaki bu araç tarafından değil, kaynak
+sunucuda elle yapılmalıdır. Mount tamamlandıktan sonra DirectAdmin/cPanel'in
+yedekleme hedefi bu mount noktasına ("Local"/"Yerel" hedef tipi) gösterilir.
+
+"NFS Kapat", SFTP/SSH-key erişimine hiç dokunmadan sadece export'u kaldırır.
+
 ## Konfigürasyon (env var'lar)
 
 | Değişken | Varsayılan | Açıklama |
@@ -174,6 +237,8 @@ yeterlidir.
 | `SSHD_MAIN_CONFIG` | `/etc/ssh/sshd_config` | Manuel `Match User` bloklarını tespit için |
 | `SSHD_SERVICE_NAME` | `sshd` | `systemctl reload` için servis adı |
 | `PROJECT_ID_BASE` | `100` | XFS proje ID ataması için taban değer |
+| `NFS_EXPORTS_DIR` | `/etc/exports.d` | Yönetilen per-kullanıcı NFS export dosyalarının yeri |
+| `NFS_SERVICE_NAME` | `nfs-server` | `exportfs`'in dayandığı systemd servis adı (aktiflik kontrolü için) |
 
 ## Lisans
 

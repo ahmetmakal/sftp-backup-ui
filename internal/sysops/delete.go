@@ -4,19 +4,22 @@ import "fmt"
 
 // DeleteBackupUser reverses provisioning: sshd chroot access first (so no
 // new sftp session can start mid-teardown), then the chroot shell
-// environment's bind mounts (must happen before homeDir is removed - a
-// mounted directory can't be cleanly deleted), then the system account,
-// then (optionally) the backed-up data itself, then the quota project
-// registration. homeDir's tree is removed directly by this function rather
-// than via userdel -r, since the chroot dir is root:root-owned (required by
-// sshd) and userdel refuses to recursively remove a directory the deleted
-// user doesn't own.
-func DeleteBackupUser(sshdConfigDir, sshdService, username, homeDir string, removeHome bool) error {
+// environment's bind mounts and any NFS export (both must happen before
+// homeDir is removed - a mounted/exported directory can't be cleanly
+// deleted), then the system account, then (optionally) the backed-up data
+// itself, then the quota project registration. homeDir's tree is removed
+// directly by this function rather than via userdel -r, since the chroot
+// dir is root:root-owned (required by sshd) and userdel refuses to
+// recursively remove a directory the deleted user doesn't own.
+func DeleteBackupUser(sshdConfigDir, sshdService, nfsExportsDir, username, homeDir string, removeHome bool) error {
 	if err := RemoveSSHDDropin(sshdConfigDir, sshdService, username); err != nil {
 		return fmt.Errorf("remove sftp chroot config: %w", err)
 	}
 	if err := DisableChrootShell(username, homeDir); err != nil {
 		return fmt.Errorf("remove chroot shell environment: %w", err)
+	}
+	if err := DisableNFS(nfsExportsDir, username); err != nil {
+		return fmt.Errorf("remove nfs export: %w", err)
 	}
 	if err := DeleteUser(username); err != nil {
 		return fmt.Errorf("delete system user: %w", err)

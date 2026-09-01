@@ -19,6 +19,9 @@ type Config struct {
 	SSHDMainConfig string
 	SSHDService    string
 	ProjectIDBase  int
+
+	NFSExportsDir  string
+	NFSServiceName string
 }
 
 func Load() (*Config, error) {
@@ -48,6 +51,9 @@ func Load() (*Config, error) {
 		SSHDMainConfig: getEnv("SSHD_MAIN_CONFIG", "/etc/ssh/sshd_config"),
 		SSHDService:    getEnv("SSHD_SERVICE_NAME", "sshd"),
 		ProjectIDBase:  projectIDBase,
+
+		NFSExportsDir:  getEnv("NFS_EXPORTS_DIR", "/etc/exports.d"),
+		NFSServiceName: getEnv("NFS_SERVICE_NAME", "nfs-server"),
 	}, nil
 }
 

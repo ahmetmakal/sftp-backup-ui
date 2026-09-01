@@ -28,12 +28,14 @@ type QuotaInfo struct {
 
 // BackupUser is a system user whose home directory lives under a backup mount.
 type BackupUser struct {
-	Username    string
-	Mount       string
-	HomeDir     string
-	Quota       *QuotaInfo // nil if no project quota is configured
-	SFTPActive  bool       // any sftp chroot Match block found (managed or manual)
-	SFTPManaged bool       // Match block is the app-managed drop-in specifically
-	HasSSHKey   bool
-	Backup      *BackupInfo // nil if the upload directory has no recognizable backup content
+	Username     string
+	Mount        string
+	HomeDir      string
+	Quota        *QuotaInfo // nil if no project quota is configured
+	SFTPActive   bool       // any sftp chroot Match block found (managed or manual)
+	SFTPManaged  bool       // Match block is the app-managed drop-in specifically
+	HasSSHKey    bool
+	NFSEnabled   bool
+	NFSClientIPs []string    // client IPs/CIDRs allowed to mount, when NFSEnabled
+	Backup       *BackupInfo // nil if the upload directory has no recognizable backup content
 }
