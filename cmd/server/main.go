@@ -47,6 +47,12 @@ func main() {
 			}
 			return a - b
 		},
+		"deficit": func(total, backed int) int {
+			if backed > total {
+				return 0
+			}
+			return total - backed
+		},
 		"date": func(t time.Time) string {
 			if t.IsZero() {
 				return ""
