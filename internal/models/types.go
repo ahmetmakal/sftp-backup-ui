@@ -11,6 +11,16 @@ type BackupInfo struct {
 	AccountCount int
 }
 
+// AccountStatus is a source server's own self-reported count of accounts
+// it currently hosts, written by contrib/account-count-check-setup.sh into
+// the user's upload directory. Compared against BackupInfo.AccountCount to
+// surface accounts that exist on the source but never made it into a backup.
+type AccountStatus struct {
+	TotalAccounts int
+	Panel         string // "cpanel" or "directadmin"
+	CheckedAt     time.Time
+}
+
 // Mount represents a discovered backup pool such as /backup1.
 type Mount struct {
 	Path           string
@@ -28,14 +38,15 @@ type QuotaInfo struct {
 
 // BackupUser is a system user whose home directory lives under a backup mount.
 type BackupUser struct {
-	Username     string
-	Mount        string
-	HomeDir      string
-	Quota        *QuotaInfo // nil if no project quota is configured
-	SFTPActive   bool       // any sftp chroot Match block found (managed or manual)
-	SFTPManaged  bool       // Match block is the app-managed drop-in specifically
-	HasSSHKey    bool
-	NFSEnabled   bool
-	NFSClientIPs []string    // client IPs/CIDRs allowed to mount, when NFSEnabled
-	Backup       *BackupInfo // nil if the upload directory has no recognizable backup content
+	Username      string
+	Mount         string
+	HomeDir       string
+	Quota         *QuotaInfo // nil if no project quota is configured
+	SFTPActive    bool       // any sftp chroot Match block found (managed or manual)
+	SFTPManaged   bool       // Match block is the app-managed drop-in specifically
+	HasSSHKey     bool
+	NFSEnabled    bool
+	NFSClientIPs  []string       // client IPs/CIDRs allowed to mount, when NFSEnabled
+	Backup        *BackupInfo    // nil if the upload directory has no recognizable backup content
+	AccountStatus *AccountStatus // nil if the source has never uploaded a status file
 }

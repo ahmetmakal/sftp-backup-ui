@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"net/url"
 	"time"
 
 	"github.com/ahmetmakal/sftp-backup-ui/internal/config"
@@ -21,6 +22,18 @@ func main() {
 	router.SetFuncMap(template.FuncMap{
 		"gb": func(bytes uint64) string {
 			return fmt.Sprintf("%.1f GB", float64(bytes)/(1<<30))
+		},
+		"humanSize": func(bytes int64) string {
+			const unit = 1024
+			if bytes < unit {
+				return fmt.Sprintf("%d B", bytes)
+			}
+			div, exp := int64(unit), 0
+			for n := bytes / unit; n >= unit; n /= unit {
+				div *= unit
+				exp++
+			}
+			return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 		},
 		"pct": func(used, total uint64) int {
 			if total == 0 {
@@ -47,6 +60,7 @@ func main() {
 			}
 			return d
 		},
+		"urlquery": url.QueryEscape,
 	})
 	router.LoadHTMLGlob("templates/*.html")
 	router.Static("/static", "./static")
@@ -57,6 +71,7 @@ func main() {
 
 	h := handlers.New(cfg)
 	authorized.GET("/", h.Dashboard)
+	authorized.GET("/users/:username/browse", h.Browse)
 	authorized.GET("/users/new", h.NewUserForm)
 	authorized.POST("/users", h.CreateUser)
 	authorized.POST("/users/:username/quota", h.UpdateQuota)

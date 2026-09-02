@@ -42,16 +42,18 @@ func LoadDashboard(mountPattern *regexp.Regexp, sshdConfigDir, sshdMainConfig, n
 		mount := filepath.Dir(e.HomeDir)
 		active, managed := SFTPStatus(sshdConfigDir, sshdMainConfig, e.Username)
 		nfsEnabled, nfsClientIPs := IsNFSEnabled(nfsExportsDir, e.Username)
+		uploadDir := filepath.Join(e.HomeDir, "upload")
 		bu := models.BackupUser{
-			Username:     e.Username,
-			Mount:        mount,
-			HomeDir:      e.HomeDir,
-			SFTPActive:   active,
-			SFTPManaged:  managed,
-			HasSSHKey:    HasAuthorizedKeys(e.HomeDir),
-			NFSEnabled:   nfsEnabled,
-			NFSClientIPs: nfsClientIPs,
-			Backup:       DetectBackup(filepath.Join(e.HomeDir, "upload")),
+			Username:      e.Username,
+			Mount:         mount,
+			HomeDir:       e.HomeDir,
+			SFTPActive:    active,
+			SFTPManaged:   managed,
+			HasSSHKey:     HasAuthorizedKeys(e.HomeDir),
+			NFSEnabled:    nfsEnabled,
+			NFSClientIPs:  nfsClientIPs,
+			Backup:        DetectBackup(uploadDir),
+			AccountStatus: ReadAccountStatus(uploadDir),
 		}
 		if report, ok := quotaByMount[mount]; ok {
 			if q, ok := report[e.Username]; ok {

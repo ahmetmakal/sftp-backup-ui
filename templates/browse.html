@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Username}} — Yedek Dizini</title>
+  <script>
+    (function () {
+      var stored = localStorage.getItem('theme');
+      var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.classList.toggle('dark', dark);
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="min-h-screen bg-[var(--bg)] font-sans text-[var(--fg)] antialiased">
+  <header class="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--card)]/70 backdrop-blur-md">
+    <div class="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-3 sm:px-6">
+      <div class="flex items-center gap-3">
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)] text-[var(--accent-fg)]">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" /></svg>
+        </span>
+        <div>
+          <h1 class="text-base font-extrabold tracking-tight">{{.Username}}</h1>
+          <p class="font-mono text-[11px] text-[var(--muted)]">{{.Mount}}/upload{{if .CurrentPath}}/{{.CurrentPath}}{{end}}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/"
+          class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--fg)] transition hover:bg-[var(--border)]/30">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
+          Panele Dön
+        </a>
+        <button id="themeToggle" type="button" title="Tema değiştir"
+          class="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] text-[var(--fg)] transition hover:bg-[var(--border)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]">
+          <svg class="hidden h-5 w-5 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg class="block h-5 w-5 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-[1600px] space-y-5 px-4 py-6 sm:px-6">
+    {{if not .HasSSHKey}}
+    <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-400">
+      <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
+      <div>İndirme komutları için önce panele dönüp bu kullanıcıya SSH Key ekleyin.</div>
+    </div>
+    {{end}}
+
+    <nav class="flex flex-wrap items-center gap-1 font-mono text-xs text-[var(--muted)]">
+      {{range $i, $crumb := .Breadcrumbs}}
+      {{if $i}}<span class="text-[var(--border)]">/</span>{{end}}
+      {{if eq $crumb.Path $.CurrentPath}}
+      <span class="font-semibold text-[var(--fg)]">{{$crumb.Name}}</span>
+      {{else}}
+      <a href="/users/{{$.Username}}/browse?mount={{$.Mount}}&amp;path={{urlquery $crumb.Path}}" class="cursor-pointer text-[var(--accent)] transition hover:underline">{{$crumb.Name}}</a>
+      {{end}}
+      {{end}}
+    </nav>
+
+    <section class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+      {{if not .Entries}}
+      <p class="text-sm text-[var(--muted)]">Bu dizin boş.</p>
+      {{else}}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-[var(--border)] text-left font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+              <th class="px-3 py-2">Ad</th>
+              <th class="px-3 py-2">Tür</th>
+              <th class="px-3 py-2">Boyut</th>
+              <th class="px-3 py-2">Değiştirilme</th>
+              <th class="px-3 py-2">Sunucuya İndirme Komutu</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border)]">
+            {{range .Entries}}
+            <tr class="transition hover:bg-[var(--border)]/20">
+              <td class="px-3 py-2.5">
+                {{if .IsDir}}
+                <a href="/users/{{$.Username}}/browse?mount={{$.Mount}}&amp;path={{urlquery .RelPath}}" class="inline-flex cursor-pointer items-center gap-1.5 font-mono text-xs text-[var(--accent)] transition hover:underline">
+                  <svg class="h-4 w-4 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM1.5 10.5V6a3 3 0 0 1 3-3h5.379a2.25 2.25 0 0 1 1.59.66l2.122 2.12a.75.75 0 0 0 .53.22H19.5a3 3 0 0 1 3 3v1.5H1.5Z" /></svg>
+                  {{.Name}}/
+                </a>
+                {{else}}
+                <span class="inline-flex items-center gap-1.5 font-mono text-xs text-[var(--fg)]">
+                  <svg class="h-4 w-4 shrink-0 text-[var(--muted)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
+                  {{.Name}}
+                </span>
+                {{end}}
+              </td>
+              <td class="px-3 py-2.5 text-xs text-[var(--muted)]">{{if .IsDir}}Klasör{{else}}Dosya{{end}}</td>
+              <td class="px-3 py-2.5 font-mono text-xs tabular-nums text-[var(--fg)]">{{if .IsDir}}—{{else}}{{humanSize .Size}}{{end}}</td>
+              <td class="px-3 py-2.5 font-mono text-xs tabular-nums text-[var(--muted)]">{{date .ModTime}}</td>
+              <td class="px-3 py-2.5">
+                {{if .IsDir}}
+                <span class="text-[var(--muted)]">—</span>
+                {{else if .DownloadCmd}}
+                <button type="button" class="copy-btn inline-flex cursor-pointer items-center gap-1 rounded-lg bg-[var(--accent)]/10 px-2.5 py-1.5 text-xs font-semibold text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)]/30 transition hover:bg-[var(--accent)]/20" data-copy-text="{{.DownloadCmd}}">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a4.5 4.5 0 0 1 1.5-.306m7.5 10.394V9.375a1.125 1.125 0 0 0-1.125-1.125h-3.75a1.125 1.125 0 0 0-1.125 1.125v8.25m6-3.75a1.125 1.125 0 0 1-1.125 1.125H9.75a1.125 1.125 0 0 1-1.125-1.125v-3.75" /></svg>
+                  Kopyala
+                </button>
+                {{else}}
+                <span class="text-xs text-[var(--muted)]">SSH Key gerekli</span>
+                {{end}}
+              </td>
+            </tr>
+            {{end}}
+          </tbody>
+        </table>
+      </div>
+      {{end}}
+    </section>
+  </main>
+
+  <script>
+    document.getElementById('themeToggle').addEventListener('click', function () {
+      var dark = !document.documentElement.classList.contains('dark');
+      document.documentElement.classList.toggle('dark', dark);
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    });
+    function copyText(text, container) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      container.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); } finally { container.removeChild(ta); }
+      return Promise.resolve();
+    }
+    document.querySelectorAll('.copy-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = btn.dataset.copyText;
+        if (!text) {
+          var target = document.getElementById(btn.dataset.copyTarget);
+          text = target.textContent;
+        }
+        copyText(text, document.body).then(function () {
+          var original = btn.textContent.trim();
+          btn.textContent = 'Kopyalandı!';
+          setTimeout(function () { btn.textContent = original; }, 1500);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

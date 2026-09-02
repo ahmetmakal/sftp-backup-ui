@@ -32,6 +32,8 @@ chown <user>:<user> /backup1/<user>/upload
   bloklarını okuyabilir) ve tek tıkla yönetime alabilir.
 - Her kullanıcının `upload/` dizinine bakarak yedeğin cPanel/DirectAdmin/özel
   formatta olup olmadığını, son yedekleme zamanını ve hesap sayısını tahmin eder.
+- (Opsiyonel) kaynak sunucudan kendi bildirdiği gerçek hesap sayısıyla
+  karşılaştırıp eksik/yedeklenmemiş hesapları işaretler.
 - Tablo üzerinde arama ve sıralama.
 - Tailwind CSS ile açık/koyu tema, tek admin şifresiyle basic-auth.
 
@@ -223,6 +225,45 @@ sonra DirectAdmin/cPanel'in yedekleme hedefi bu mount noktasına
 ("Local"/"Yerel" hedef tipi) gösterilir.
 
 "NFS Kapat", SFTP/SSH-key erişimine hiç dokunmadan sadece export'u kaldırır.
+
+## Hesap sayısı takibi (eksik/yedeklenmemiş hesap tespiti)
+
+Panel, bir kullanıcının `upload/` dizinine bakarak en son yedekte kaç hesap
+arşivi olduğunu tahmin edebiliyor (`DetectBackup`) — ama bunun kaynak
+sunucudaki **gerçek** hesap sayısıyla eşleşip eşleşmediğini bilmiyor. Bir
+cPanel/DirectAdmin sunucusuna yeni bir hesap eklenip yedekleme kapsamı
+güncellenmezse, bunu şu ana kadar fark etmenin yolu yoktu.
+
+`contrib/account-count-check-setup.sh`, kaynak sunucuya kurulan bağımsız
+bir cron job'udur: kendi hesap sayısını **yerelde, root olarak** okur
+(cPanel → `/var/cpanel/users/`, DirectAdmin → `/usr/local/directadmin/
+data/users/` — API/kimlik doğrulama gerekmez), ve bunu **zaten kurulu olan
+aynı SSH key ile**, mevcut SFTP kanalından `upload/.account-status.json`
+olarak yükler. Backup sunucusu hiçbir yeni kimlik bilgisi saklamaz, hiçbir
+yeni dışa bağlantı açmaz — sadece zaten okuduğu `upload/` dizininde bir
+dosya daha okur.
+
+**Kurulum** (kaynak sunucuda, root olarak — önce normal SFTP/SSH key
+kurulumu tamamlanmış olmalı):
+
+```sh
+scp contrib/account-count-check-setup.sh root@<kaynak-sunucu>:/root/
+ssh root@<kaynak-sunucu>
+./account-count-check-setup.sh --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
+```
+
+Günde bir kez (varsayılan 04:30) root'un crontab'ına bir girdi ekler.
+Doğrulamak için:
+
+```sh
+./account-count-check-setup.sh --test-only --hostname server.example.com --dest-host backup.ornek-sunucunuz.com
+```
+
+Panelde, "Yedekleme" hücresinin altında ikinci bir satır olarak görünür:
+henüz hiç rapor gelmemişse soluk "hesap takibi yok", geldiyse yeşil
+"N/N hesap" (yedeklenen sayı ≥ kaynaktaki sayı) ya da kırmızı "M/N hesap
+eksik" (yedeklenen sayı kaynaktakinden az — asıl aranan uyarı), yanında son
+kontrolün ne zaman yapıldığı.
 
 ## Konfigürasyon (env var'lar)
 
