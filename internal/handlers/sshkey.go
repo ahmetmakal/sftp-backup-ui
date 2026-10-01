@@ -20,7 +20,8 @@ func (h *Handlers) UpdateSSHKey(c *gin.Context) {
 		c.Redirect(http.StatusSeeOther, "/?error="+url.QueryEscape(err.Error()))
 		return
 	}
-	c.Redirect(http.StatusSeeOther, "/?flash="+url.QueryEscape("SSH anahtarı güncellendi: "+username))
+	setupNote := h.setupAccountCount(c, username, mount)
+	c.Redirect(http.StatusSeeOther, "/?flash="+url.QueryEscape("SSH anahtarı güncellendi: "+username+setupNote))
 }
 
 func (h *Handlers) doUpdateSSHKey(username, mount, pubKey string) error {

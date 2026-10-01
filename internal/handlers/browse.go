@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -63,10 +62,7 @@ func (h *Handlers) Browse(c *gin.Context) {
 
 	cleanedPath := strings.TrimPrefix(path.Clean("/"+relPath), "/")
 
-	destHost := c.Request.Host
-	if host, _, err := net.SplitHostPort(destHost); err == nil {
-		destHost = host
-	}
+	destHost, destPort := h.backupSFTPEndpoint(c)
 
 	hasSSHKey := sysops.HasAuthorizedKeys(homeDir)
 
@@ -82,8 +78,8 @@ func (h *Handlers) Browse(c *gin.Context) {
 		if !e.IsDir && hasSSHKey {
 			remotePath := "upload/" + e.RelPath
 			view.DownloadCmd = fmt.Sprintf(
-				`rsync -av -e "ssh -i /root/.ssh/backup_%s -p 22" %s@%s:'%s' .`,
-				username, username, destHost, remotePath,
+				`rsync -av -e "ssh -i /root/.ssh/backup_%s -p %s" %s@%s:'%s' .`,
+				username, destPort, username, destHost, remotePath,
 			)
 		}
 		viewEntries[i] = view

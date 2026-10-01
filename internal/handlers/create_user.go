@@ -17,9 +17,15 @@ func (h *Handlers) NewUserForm(c *gin.Context) {
 		})
 		return
 	}
+	destHost, destPort := h.backupSFTPEndpoint(c)
+
 	c.HTML(http.StatusOK, "create_user.html", gin.H{
-		"Mounts": mounts,
-		"Error":  c.Query("error"),
+		"Mounts":           mounts,
+		"Error":            c.Query("error"),
+		"DestHost":         destHost,
+		"DestPort":         destPort,
+		"AutoAccountCount": h.cfg.SourceSSHPort != "",
+		"AccountCountPull": h.accountCountPullCmd("server.example.com", destHost, destPort),
 	})
 }
 
@@ -49,10 +55,12 @@ func (h *Handlers) CreateUser(c *gin.Context) {
 	}
 
 	keyNote := "SSH key sonradan eklenebilir"
+	setupNote := ""
 	if pubKey != "" {
 		keyNote = "SSH key eklendi"
+		setupNote = h.setupAccountCount(c, username, mount)
 	}
-	msg := fmt.Sprintf("Kullanıcı oluşturuldu: %s · %s · %s kota · %s", username, mount, quotaSize, keyNote)
+	msg := fmt.Sprintf("Kullanıcı oluşturuldu: %s · %s · %s kota · %s%s", username, mount, quotaSize, keyNote, setupNote)
 	c.Redirect(http.StatusSeeOther, "/?flash="+url.QueryEscape(msg))
 }
 

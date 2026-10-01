@@ -22,6 +22,19 @@ type Config struct {
 
 	NFSExportsDir  string
 	NFSServiceName string
+
+	// BackupSFTPHost is the address source servers use for SFTP/rsync uploads.
+	// When empty, handlers fall back to the HTTP request Host header.
+	BackupSFTPHost string
+	BackupSFTPPort string
+
+	// SourceSSHPort enables automatic account-count setup: after an SSH key is
+	// added the backup server SSHes into the source (as SourceSSHUser) and
+	// runs a pull+install one-liner using the source's existing backup key.
+	SourceSSHPort string
+	SourceSSHUser string
+
+	AccountCountScript string
 }
 
 func Load() (*Config, error) {
@@ -54,6 +67,13 @@ func Load() (*Config, error) {
 
 		NFSExportsDir:  getEnv("NFS_EXPORTS_DIR", "/etc/exports.d"),
 		NFSServiceName: getEnv("NFS_SERVICE_NAME", "nfs-server"),
+
+		BackupSFTPHost: getEnv("BACKUP_SFTP_HOST", ""),
+		BackupSFTPPort: getEnv("BACKUP_SFTP_PORT", "22"),
+
+		SourceSSHPort:      getEnv("SOURCE_SSH_PORT", ""),
+		SourceSSHUser:      getEnv("SOURCE_SSH_USER", "root"),
+		AccountCountScript: getEnv("ACCOUNT_COUNT_SCRIPT", "/opt/sftp-backup-ui/contrib/account-count-check-setup.sh"),
 	}, nil
 }
 

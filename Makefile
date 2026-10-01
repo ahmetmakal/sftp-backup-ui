@@ -26,10 +26,11 @@ build: css
 	GOOS=linux GOARCH=$(GOARCH) go build -o bin/$(APP_NAME) ./cmd/server
 
 deploy: build
-	$(SSH) 'mkdir -p $(REMOTE_DIR)/bin $(REMOTE_ENV_DIR)'
+	$(SSH) 'mkdir -p $(REMOTE_DIR)/bin $(REMOTE_DIR)/contrib $(REMOTE_ENV_DIR)'
 	$(RSYNC) bin/$(APP_NAME) $(SSH_TARGET):$(REMOTE_DIR)/bin/$(APP_NAME)
 	$(RSYNC) --delete templates/ $(SSH_TARGET):$(REMOTE_DIR)/templates/
 	$(RSYNC) --delete static/ $(SSH_TARGET):$(REMOTE_DIR)/static/
+	$(RSYNC) contrib/ $(SSH_TARGET):$(REMOTE_DIR)/contrib/
 	$(RSYNC) deploy/env.example $(SSH_TARGET):$(REMOTE_DIR)/env.example
 	$(RSYNC) deploy/$(SERVICE_NAME) $(SSH_TARGET):/etc/systemd/system/$(SERVICE_NAME)
 	$(SSH) 'chmod +x $(REMOTE_DIR)/bin/$(APP_NAME); \

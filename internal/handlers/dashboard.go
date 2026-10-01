@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"net"
 	"net/http"
 
 	"github.com/ahmetmakal/sftp-backup-ui/internal/sysops"
@@ -19,15 +18,13 @@ func (h *Handlers) Dashboard(c *gin.Context) {
 		return
 	}
 
-	destHost := c.Request.Host
-	if host, _, err := net.SplitHostPort(destHost); err == nil {
-		destHost = host
-	}
+	destHost, destPort := h.backupSFTPEndpoint(c)
 
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
 		"Mounts":   data.Mounts,
 		"Users":    data.Users,
 		"DestHost": destHost,
+		"DestPort": destPort,
 		"Flash":    c.Query("flash"),
 		"Error":    c.Query("error"),
 	})
