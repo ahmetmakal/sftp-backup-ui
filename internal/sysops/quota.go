@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,11 @@ import (
 const (
 	projectsFile = "/etc/projects"
 	projidFile   = "/etc/projid"
+
+	// limitsFile mirrors the block limits kept in the xfs quota inodes
+	// ("project:size" lines). xfs_repair can rebuild those inodes and zero
+	// every limit, so this file lets RestoreQuotaLimits put them back.
+	limitsFile = "/etc/projquota-limits"
 )
 
 // NextProjectID scans /etc/projid for the highest numeric project id in use
@@ -57,6 +63,9 @@ func RemoveProjectEntry(username string) error {
 	if err := removeLinesWithKey(projectsFile, username); err != nil {
 		return fmt.Errorf("update %s: %w", projectsFile, err)
 	}
+	if err := removeLinesWithKey(limitsFile, username); err != nil {
+		return fmt.Errorf("update %s: %w", limitsFile, err)
+	}
 	return nil
 }
 
@@ -71,8 +80,60 @@ func SetProjectQuota(mount, username string) error {
 // user's project on mount. size must already be validated (ValidateQuotaSize).
 func SetQuotaLimit(mount, username, size string) error {
 	cmd := fmt.Sprintf("limit -p bsoft=%s bhard=%s %s", size, size, username)
-	_, err := run("xfs_quota", "-x", "-c", cmd, mount)
-	return err
+	if _, err := run("xfs_quota", "-x", "-c", cmd, mount); err != nil {
+		return err
+	}
+	return recordQuotaLimit(username, size)
+}
+
+// recordQuotaLimit upserts username's limit in limitsFile.
+func recordQuotaLimit(username, size string) error {
+	if err := removeLinesWithKey(limitsFile, username); err != nil {
+		return err
+	}
+	return appendLine(limitsFile, username+":"+size)
+}
+
+// RestoreQuotaLimits reconciles the xfs quota limits on every backup mount
+// with limitsFile: a project whose hard limit is 0 but has a recorded limit
+// gets it re-applied, and a project with a limit that isn't recorded yet is
+// added to the file. It returns the usernames it restored.
+func RestoreQuotaLimits(pattern *regexp.Regexp) ([]string, error) {
+	mounts, err := DiscoverMounts(pattern)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := readColonFile(limitsFile)
+	if err != nil {
+		return nil, err
+	}
+	recorded := make(map[string]string, len(entries))
+	for _, e := range entries {
+		recorded[e.key] = e.value
+	}
+
+	var restored []string
+	for _, m := range mounts {
+		report, err := ReportProjectQuotas(m.Path)
+		if err != nil {
+			continue
+		}
+		for name, q := range report {
+			size, ok := recorded[name]
+			switch {
+			case q.HardBytes == 0 && ok:
+				if err := SetQuotaLimit(m.Path, name, size); err != nil {
+					return restored, err
+				}
+				restored = append(restored, name)
+			case q.HardBytes != 0 && !ok:
+				if err := recordQuotaLimit(name, strconv.FormatUint(q.HardBytes/1024, 10)+"k"); err != nil {
+					return restored, err
+				}
+			}
+		}
+	}
+	return restored, nil
 }
 
 // ReportProjectQuotas parses `xfs_quota report -p` for mount into a map of

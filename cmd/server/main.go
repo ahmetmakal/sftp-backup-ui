@@ -9,6 +9,7 @@ import (
 
 	"github.com/ahmetmakal/sftp-backup-ui/internal/config"
 	"github.com/ahmetmakal/sftp-backup-ui/internal/handlers"
+	"github.com/ahmetmakal/sftp-backup-ui/internal/sysops"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,6 +17,12 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
+	}
+
+	if restored, err := sysops.RestoreQuotaLimits(cfg.MountRegex); err != nil {
+		log.Printf("quota restore: %v", err)
+	} else if len(restored) > 0 {
+		log.Printf("quota restore: re-applied limits for %v", restored)
 	}
 
 	router := gin.Default()
